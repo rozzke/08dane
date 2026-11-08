@@ -1,0 +1,95 @@
+package com.example.zadanie08;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.widget.ArrayAdapter;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.SeekBar;
+import android.widget.Spinner;
+import android.widget.TextView;
+
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.appcompat.app.AppCompatActivity;
+
+import com.google.android.material.snackbar.Snackbar;
+
+public class MainActivity extends AppCompatActivity {
+
+    // rejestracja MUSI powstać zanim ekran stanie się widoczny - stąd pole klasy
+    private final ActivityResultLauncher<Intent> summaryLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                    String number = result.getData()
+                            .getStringExtra(com.example.zadanie08.MainActivity2.EXTRA_NUMBER);
+                    showRegistered(number);
+                }
+                // RESULT_CANCELED - użytkownik wrócił do poprawek, nic nie robimy
+            });
+
+    private EditText etName, etEmail;
+    private Spinner spCourse;
+    private SeekBar sbLevel;
+    private TextView tvLevelValue;
+    private CheckBox cbNewsletter;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        etName = findViewById(R.id.etName);
+        etEmail = findViewById(R.id.etEmail);
+        spCourse = findViewById(R.id.spCourse);
+        sbLevel = findViewById(R.id.sbLevel);
+        tvLevelValue = findViewById(R.id.tvLevelValue);
+        cbNewsletter = findViewById(R.id.cbNewsletter);
+
+        setUpCourseSpinner();
+        setUpLevelSeekBar();
+
+        findViewById(R.id.btnNext).setOnClickListener(v -> openSummary());
+    }
+
+    private void setUpCourseSpinner() {
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(
+                this, R.array.courses, android.R.layout.simple_spinner_item);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spCourse.setAdapter(adapter);
+    }
+
+    private void setUpLevelSeekBar() {
+        tvLevelValue.setText(String.valueOf(sbLevel.getProgress()));
+        sbLevel.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                tvLevelValue.setText(String.valueOf(progress));
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) { }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) { }
+        });
+    }
+
+    private void openSummary() {
+        Intent intent = new Intent(this, MainActivity2.class);
+        intent.putExtra(MainActivity2.EXTRA_NAME, etName.getText().toString().trim());
+        intent.putExtra(MainActivity2.EXTRA_EMAIL, etEmail.getText().toString().trim());
+        intent.putExtra(MainActivity2.EXTRA_COURSE, spCourse.getSelectedItem().toString());
+        intent.putExtra(MainActivity2.EXTRA_LEVEL, sbLevel.getProgress());
+        intent.putExtra(MainActivity2.EXTRA_NEWSLETTER, cbNewsletter.isChecked());
+
+        summaryLauncher.launch(intent);        // zamiast startActivity
+    }
+
+    private void showRegistered(String number) {
+        Snackbar.make(findViewById(R.id.main),
+                getString(R.string.registered, number),
+                Snackbar.LENGTH_LONG).show();
+    }
+}
